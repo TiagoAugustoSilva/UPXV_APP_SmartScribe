@@ -17,6 +17,9 @@
 - [react-native-animatable](https://github.com/oblador/react-native-animatable) para animações
 
 ## 📸 Prévia
+![ALT Text](src/assets/login-removebg-preview.png)
+
+
 
 (Adicione aqui capturas de tela do app ou um GIF mostrando o funcionamento)
 
