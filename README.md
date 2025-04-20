@@ -24,7 +24,6 @@
 
 
 
-(Adicione aqui capturas de tela do app ou um GIF mostrando o funcionamento)
 
 ## 🛠️ Instalação
 
