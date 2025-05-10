@@ -19,6 +19,8 @@
 ## 📸 Prévia
 ![ALT Text](src/assets/login-removebg-preview.png)
 ![ALT Text](src/assets/cadastrar-removebg-preview.png)
+![ALT Text](src/assets/home-gravar-removebg-preview.png)
+![ALT Text](src/assets/menu-removebg-preview.png)
 
 
 
