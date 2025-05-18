@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Pressable, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Pressable, KeyboardAvoidingView, Platform, ScrollView, Alert } from "react-native";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -9,8 +9,18 @@ export default function Signup() {
     const [password, setPassword] = useState("");
 
     const handleSignup = () => {
-        // Aqui você pode implementar a lógica de cadastro
+        // Simula cadastro bem-sucedido no frontend
         console.log("Cadastro realizado:", { name, email, password });
+
+        Alert.alert("Sucesso", "Usuário cadastrado, faça login");
+
+        // Opcional: limpar campos após cadastro
+        setName("");
+        setEmail("");
+        setPassword("");
+
+        // Opcional: navegar para tela de login
+        // router.push('/login');
     };
 
     return (
@@ -37,10 +47,10 @@ export default function Signup() {
                     {/* Container para os Inputs */}
                     <View style={styles.containerForm}>
                         {/* Título para o campo de e-mail */}
-                        <Text style={styles.inputLabel}>E-mail</Text>
+                        <Text style={styles.inputLabel}>E-mail/Nickname</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Digite um e-mail"
+                            placeholder="Digite um e-mail, nickname"
                             keyboardType="email-address"
                             autoCapitalize="none"
                             value={email}
@@ -125,8 +135,8 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         marginBottom: 5,
-        color: '#333', // Cor para o título dos inputs
-        alignSelf: 'flex-start', // Alinha à esquerda
+        color: '#333',
+        alignSelf: 'flex-start',
     },
     input: {
         width: '100%',
@@ -134,7 +144,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderColor: '#3B82F6',
         borderRadius: 8,
-        marginBottom: 30,  // Ajustei o espaçamento para os inputs
+        marginBottom: 30,
     },
     button: {
         backgroundColor: '#007bff',
