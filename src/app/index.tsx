@@ -1,10 +1,20 @@
 import { useState } from "react";
-import { Text, View, ScrollView, TextInput, TouchableOpacity, Image, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import {
+  Text,
+  View,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { Header } from "../components/header";
 import Constants from "expo-constants";
 import { Banner } from "../components/banner";
 import { Search } from "../components";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { StatusBar } from "react-native";
 import * as Animatable from "react-native-animatable";
 
@@ -14,6 +24,8 @@ export default function Index() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [buttonPressed, setButtonPressed] = useState(false);
+  const router = useRouter();
 
   function handleLogin() {
     if (username === "admin" && password === "1234") {
@@ -23,20 +35,17 @@ export default function Index() {
     }
   }
 
-  function handleRegister() {
-    alert("Redirecionando para tela de cadastro...");
-    // Aqui você pode implementar a navegação para a tela de cadastro
+  // Função do botão Sair, levando para a tela inicial de login
+  function handleExit() {
+    setIsLoggedIn(false);  // Aqui você pode resetar o login, se necessário
+    router.push("/"); // Navega de volta para a tela de login
   }
 
   if (!isLoggedIn) {
     return (
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <StatusBar backgroundColor="#6699ff" barStyle="light-content" />
 
-        {/* Logo do app */}
         <Animatable.Image
           animation="flipInY"
           source={require("../assets/logo-03.png")}
@@ -45,7 +54,6 @@ export default function Index() {
         />
 
         <Animatable.View delay={600} animation="fadeInUp" style={styles.containerForm}>
-          {/* Label para Email */}
           <Text style={styles.inputLabel}></Text>
           <TextInput
             style={styles.input}
@@ -54,7 +62,6 @@ export default function Index() {
             onChangeText={setUsername}
           />
 
-          {/* Label para Senha */}
           <Text style={styles.inputLabel}></Text>
           <TextInput
             style={[styles.input, styles.passwordInput]}
@@ -69,12 +76,10 @@ export default function Index() {
           <Text style={styles.buttonText}>Acessar</Text>
         </TouchableOpacity>
 
-        {/* Link para cadastro abaixo do botão "Entrar" */}
         <Link href="/(auth)/signup/page" style={styles.signupLink}>
           <Text style={styles.signupText}>Ainda não possui uma conta? Cadastre-se aqui</Text>
         </Link>
 
-        {/* Adicionando outra imagem abaixo do link */}
         <Image
           source={require("../assets/audio-01.png")}
           style={styles.additionalImage}
@@ -86,12 +91,22 @@ export default function Index() {
 
   return (
     <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-    <View style={{ flex: 1, marginTop: 0 }}>
-      <Banner />
-      <Header />
-      <Search />
-    </View>
-  </ScrollView>
+      <View style={{ flex: 1, marginTop: 0 }}>
+        <Banner />
+        <Header />
+        <Search />
+        <TouchableOpacity
+          style={[styles.exitButton, buttonPressed && styles.exitButtonPressed]}
+          onPress={() => {
+            setButtonPressed(true);
+            setTimeout(() => setButtonPressed(false), 200);
+            router.push("/transcricoes"); // Aqui você leva para a tela de transcrições
+          }}
+        >
+          <Text style={styles.buttonText}>Ver transcrições salvas</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -106,13 +121,6 @@ const styles = StyleSheet.create({
     width: 230,
     height: 220,
     marginTop: -100,
-  },
-  slogan: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#3B82F6",
-    marginTop: 24,
-    fontStyle: "italic",
   },
   inputLabel: {
     fontWeight: "600",
@@ -162,5 +170,15 @@ const styles = StyleSheet.create({
     width: 240,
     height: 160,
     marginBottom: 32,
+  },
+  exitButton: {
+    padding: 10,
+    backgroundColor: "#cccccc",
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 16,
+  },
+  exitButtonPressed: {
+    backgroundColor: "#33cc00",
   },
 });
