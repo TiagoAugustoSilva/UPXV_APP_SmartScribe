@@ -1,235 +1,149 @@
-import { useRef, useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  FlatList,
-  Platform,
-} from "react-native";
-import { Audio } from "expo-av";
-import { Feather } from "@expo/vector-icons";
-import { useTheme } from "../components/context/ThemeContext";
+import React, { useEffect, useState } from "react";
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ScrollView, Alert } from "react-native";
+import * as FileSystem from "expo-file-system";
+import { useIsFocused } from "@react-navigation/native";
 
-interface RecordingItem {
-  uri: string;
-  date: string;
-  id: string;
-  isPlaying: boolean;
-  sound: Audio.Sound | null;
-}
+export default function Transcricoes() {
+  const [files, setFiles] = useState<{ uri: string; name: string; content: string }[]>([]);
+  const [selectedContent, setSelectedContent] = useState<string | null>(null);
+  const isFocused = useIsFocused();
 
-export default function Gravacoes() {
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordings, setRecordings] = useState<RecordingItem[]>([]);
-  const recordingRef = useRef<Audio.Recording | null>(null);
-  const { theme } = useTheme();
+  const loadFiles = async () => {
+    const dirUri = FileSystem.documentDirectory + "transcricoes/";
 
-  // Função para carregar gravações salvas (caso você queira persistir gravações)
-  useEffect(() => {
-    // Aqui você pode adicionar a lógica de carregamento, como carregar gravações de um banco local ou AsyncStorage
-  }, []);
-
-  const handleRecord = async () => {
     try {
-      if (!isRecording) {
-        const { granted } = await Audio.requestPermissionsAsync();
-        if (!granted) {
-          Alert.alert("Permissão negada para gravar áudio");
-          return;
-        }
-
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-
-        const { recording } = await Audio.Recording.createAsync({
-          android: {
-            extension: ".m4a",
-            outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_MPEG_4,
-            audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
-            sampleRate: 44100,
-            numberOfChannels: 2,
-            bitRate: 128000,
-          },
-          ios: {
-            extension: ".m4a",
-            audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
-            sampleRate: 44100,
-            numberOfChannels: 2,
-          },
-        });
-
-        recordingRef.current = recording;
-        setIsRecording(true);
-      } else {
-        const recording = recordingRef.current;
-        if (recording) {
-          await recording.stopAndUnloadAsync();
-          const uri = recording.getURI();
-          setIsRecording(false);
-
-          if (uri) {
-            const newRecording = {
-              uri,
-              date: new Date().toISOString(),
-              id: `${Date.now()}`,
-              isPlaying: false,
-              sound: null,
-            };
-            setRecordings((prev) => [...prev, newRecording]);
-            Alert.alert("Gravação salva!", `Arquivo de áudio: ${uri}`);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Erro na gravação:", error);
-      Alert.alert("Erro", "Falha ao gravar o áudio.");
-    }
-  };
-
-  const handlePlayPause = async (recording: RecordingItem) => {
-    try {
-      const currentRecordingIndex = recordings.findIndex((rec) => rec.id === recording.id);
-      const updatedRecordings = [...recordings];
-
-      // Se já está tocando, pausar
-      if (recording.isPlaying && recording.sound) {
-        await recording.sound.pauseAsync();
-        updatedRecordings[currentRecordingIndex].isPlaying = false;
-        setRecordings(updatedRecordings);
+      const dirInfo = await FileSystem.getInfoAsync(dirUri);
+      if (!dirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(dirUri, { intermediates: true });
+        setFiles([]);
         return;
       }
 
-      // Parar qualquer som ativo antes de tocar o novo
-      recordings.forEach(async (rec) => {
-        if (rec.isPlaying && rec.sound) {
-          await rec.sound.stopAsync();
-        }
-      });
+      const fileNames = await FileSystem.readDirectoryAsync(dirUri);
 
-      let sound = recording.sound;
+      const filesData = await Promise.all(
+        fileNames.map(async (fileName) => {
+          const uri = dirUri + fileName;
+          const content = await FileSystem.readAsStringAsync(uri);
+          return { uri, name: fileName, content };
+        })
+      );
 
-      // Se o som não foi criado, cria um novo
-      if (!sound) {
-        const { sound: newSound } = await Audio.Sound.createAsync(
-          { uri: recording.uri },
-          { shouldPlay: true }
-        );
-        sound = newSound;
-
-        // Atualiza a gravação com o som criado
-        updatedRecordings[currentRecordingIndex].sound = sound;
-
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.didJustFinish) {
-            updatedRecordings[currentRecordingIndex].isPlaying = false;
-            setRecordings([...updatedRecordings]);
-          }
-        });
-      } else {
-        await sound.playAsync();
-      }
-
-      // Atualiza o estado da reprodução
-      updatedRecordings[currentRecordingIndex].isPlaying = true;
-      setRecordings(updatedRecordings);
+      setFiles(filesData);
     } catch (error) {
-      console.error("Erro ao reproduzir:", error);
-      Alert.alert("Erro", "Falha ao reproduzir o áudio.");
+      console.error("Erro ao carregar transcrições:", error);
+      setFiles([]);
     }
   };
 
-  return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <TouchableOpacity
-        style={[
-          styles.button,
-          isRecording ? styles.buttonRecording : styles.buttonIdle,
-          { backgroundColor: theme.primary },
-        ]}
-        onPress={handleRecord}
-      >
-        <Feather name="mic" size={80} color="#fff" />
-      </TouchableOpacity>
-      <Text style={[styles.title, { color: theme.text }]}>
-        {isRecording ? "Gravando..." : "Pressione para gravar"}
-      </Text>
+  useEffect(() => {
+    if (isFocused) {
+      loadFiles();
+    }
+  }, [isFocused]);
 
-      <Text style={[styles.subtitle, { color: theme.text }]}>Gravações:</Text>
-      {recordings.length === 0 ? (
-        <Text style={[styles.emptyText, { color: theme.text }]}>
-          Nenhuma gravação salva.
-        </Text>
+  const handleDelete = (fileUri: string) => {
+    Alert.alert(
+      "Excluir Transcrição",
+      "Tem certeza que deseja excluir esta transcrição?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await FileSystem.deleteAsync(fileUri);
+              // Se o conteúdo exibido for o arquivo deletado, fechar o modal
+              if (selectedContent && files.find(f => f.uri === fileUri)?.content === selectedContent) {
+                setSelectedContent(null);
+              }
+              loadFiles();
+            } catch (error) {
+              console.error("Erro ao excluir arquivo:", error);
+              Alert.alert("Erro", "Não foi possível excluir a transcrição.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Transcrições Salvas</Text>
+
+      {files.length === 0 ? (
+        <Text style={styles.emptyText}>Nenhuma transcrição salva.</Text>
       ) : (
         <FlatList
-          data={recordings}
-          keyExtractor={(item) => item.id}
+          data={files}
+          keyExtractor={(item) => item.uri}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.recordingItem, { backgroundColor: theme.secondary }]}
-              onPress={() => handlePlayPause(item)}
-            >
-              <Text style={[styles.recordingText, { color: theme.text }]}>
-                Gravação: {new Date(item.date).toLocaleString()}
-              </Text>
-              <Feather
-                name={item.isPlaying ? "pause" : "play"}
-                size={24}
-                color="#fff"
-              />
-            </TouchableOpacity>
+            <View style={styles.itemContainer}>
+              <TouchableOpacity style={styles.item} onPress={() => setSelectedContent(item.content)}>
+                <Text style={styles.itemText}>{item.name}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(item.uri)}>
+                <Text style={styles.deleteButtonText}>Excluir</Text>
+              </TouchableOpacity>
+            </View>
           )}
         />
+      )}
+
+      {selectedContent && (
+        <View style={styles.contentContainer}>
+          <ScrollView>
+            <Text style={styles.contentText}>{selectedContent}</Text>
+          </ScrollView>
+          <TouchableOpacity style={styles.closeButton} onPress={() => setSelectedContent(null)}>
+            <Text style={styles.closeButtonText}>Fechar</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: 60,
-    paddingHorizontal: 20,
-  },
-  button: {
-    alignSelf: "center",
-    borderRadius: 50,
-    padding: 20,
-    marginBottom: 20,
-  },
-  buttonIdle: {
-    backgroundColor: "#0066ff",
-  },
-  buttonRecording: {
-    backgroundColor: "#ff3b30",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginVertical: 10,
-  },
-  emptyText: {
-    fontStyle: "italic",
-    textAlign: "center",
-  },
-  recordingItem: {
-    padding: 15,
-    marginVertical: 5,
-    borderRadius: 8,
+  container: { flex: 1, padding: 20, backgroundColor: "#fff" },
+  title: { fontSize: 22, fontWeight: "bold", marginBottom: 15 },
+  emptyText: { fontStyle: "italic", fontSize: 18, color: "#666", textAlign: "center", marginTop: 40 },
+  itemContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
   },
-  recordingText: {
-    fontSize: 16,
+  item: { flex: 1, padding: 15 },
+  itemText: { fontSize: 18, color: "#007AFF" },
+  deleteButton: {
+    backgroundColor: "#ff3b30",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 6,
+    marginRight: 5,
   },
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  contentContainer: {
+    marginTop: 15,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    maxHeight: "50%",
+    padding: 10,
+  },
+  contentText: { fontSize: 16, color: "#333" },
+  closeButton: {
+    marginTop: 10,
+    backgroundColor: "#007AFF",
+    borderRadius: 6,
+    padding: 10,
+    alignItems: "center",
+  },
+  closeButtonText: { color: "#fff", fontWeight: "bold" },
 });
