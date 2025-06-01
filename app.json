@@ -3,8 +3,8 @@
     "name": "SmartScribe",
     "slug": "SmartScribe",
     "version": "1.0.0",
+    "icon": "./src/assets/logo1-smart.png",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -17,23 +17,18 @@
       }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "permissions": ["RECORD_AUDIO"]
+      "permissions": ["RECORD_AUDIO"],
+      "package": "com.seuapp.smartscribe"
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "output": "static"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -41,7 +36,18 @@
       ]
     ],
     "experiments": {
-      "typedRoutes": true
+      "routerRoot": "./src/app"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "753bb20e-0c35-4967-87fd-56478bcae8a2"
+      }
     }
+  },
+  "cli": {
+    "appVersionSource": "project"
   }
 }
